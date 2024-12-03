@@ -53,6 +53,49 @@
         }
       }
     },
+            "/api/downloader/fbdl": {
+      "get": {
+        "summary": "",
+        "description": "facebook downloader",
+        "tags": [
+          "Downloader Sosmed"
+        ],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "`Try Paste Facebook Url`",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "https://www.facebook.com/share/r/1EGpE7K8bd/"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "parameter format not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/downloader/tiktokdl": {
       "get": {
         "summary": "",
