@@ -7,8 +7,9 @@ export default async function handler(req, res) {
   }
 
   const { url } = req.query;
-  if (!url) {
-    return res.status(400).json({ error: "URL parameter is required" });
+  const facebookRegex = /^https?:\/\/(www\.)?facebook\.com\/.+/;
+  if (!url || !facebookRegex.test(url)) {
+    return res.status(400).json({ error: "Invalid or missing Facebook URL" });
   }
 
   try {
@@ -16,7 +17,11 @@ export default async function handler(req, res) {
     if (!result.success) {
       return res.status(500).json(result);
     }
-    res.status(200).json(result.data);
+    res.status(200).json({
+      status: "success",
+      timestamp: new Date().toISOString(),
+      data: result.data,
+    });
   } catch (error) {
     console.error("Error in handler:", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -24,7 +29,7 @@ export default async function handler(req, res) {
 }
 
 const fsaver = async (urls) => {
-  const baseUrl = "https://fsaver.net";
+  const baseUrl = process.env.FSAVER_BASE_URL || "https://fsaver.net";
   const url = `${baseUrl}/download/?url=${encodeURIComponent(urls)}`;
   const headers = {
     "Upgrade-Insecure-Requests": "1",
@@ -39,21 +44,18 @@ const fsaver = async (urls) => {
     const response = await axios.get(url, { headers });
     const html = response.data;
 
-    // Proses data menggunakan Cheerio
     const $ = cheerio.load(html);
 
-    // Ambil data yang diperlukan
-    const videoSrc = $('.video__item').attr('src');
-    const videoPoster = $('.video__item').attr('poster');
-    const name = $('.download__item__user_info div').first().text().trim();
-    const profilePicture = $('.download__item__profile_pic img').attr('src');
+    const videoSrc = $(".video__item").attr("src");
+    const videoPoster = $(".video__item").attr("poster");
+    const name = $(".download__item__user_info div").first().text().trim();
+    const profilePicture = $(".download__item__profile_pic img").attr("src");
 
     if (!videoSrc || !videoPoster || !profilePicture) {
       throw new Error("Unable to extract required data");
     }
 
-    // Kembalikan hasil dalam format yang sesuai
-    const result = {
+    return {
       success: true,
       data: {
         video: baseUrl + videoSrc,
@@ -64,7 +66,6 @@ const fsaver = async (urls) => {
         },
       },
     };
-    return result;
   } catch (error) {
     console.error("Error in fsaver:", error.message);
     return { success: false, message: error.message };
