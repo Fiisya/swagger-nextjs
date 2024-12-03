@@ -1,33 +1,6 @@
 import axios from "axios";
 import cheerio from "cheerio";
 
-export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { url } = req.query;
-  const facebookRegex = /^https?:\/\/(www\.)?facebook\.com\/.+/;
-  if (!url || !facebookRegex.test(url)) {
-    return res.status(400).json({ error: "Invalid or missing Facebook URL" });
-  }
-
-  try {
-    const result = await fsaver(url);
-    if (!result.success) {
-      return res.status(500).json(result);
-    }
-    res.status(200).json({
-      status: "success",
-      timestamp: new Date().toISOString(),
-      data: result.data,
-    });
-  } catch (error) {
-    console.error("Error in handler:", error.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-}
-
 const fsaver = async (urls) => {
   const baseUrl = process.env.FSAVER_BASE_URL || "https://fsaver.net";
   const url = `${baseUrl}/download/?url=${encodeURIComponent(urls)}`;
@@ -42,8 +15,12 @@ const fsaver = async (urls) => {
 
   try {
     const response = await axios.get(url, { headers });
-    const html = response.data;
 
+    if (!response.data) {
+      throw new Error("No HTML content received");
+    }
+
+    const html = response.data;
     const $ = cheerio.load(html);
 
     const videoSrc = $(".video__item").attr("src");
